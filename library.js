@@ -17,10 +17,10 @@ function wrap(handler) {
 	return async (req, res) => {
 		try {
 			const payload = await handler(req);
-			const helpers = nbb('./src/routes/helpers');
+			const helpers = nbb('./src/controllers/helpers');
 			return helpers.formatApiResponse(200, res, payload);
 		} catch (err) {
-			const helpers = nbb('./src/routes/helpers');
+			const helpers = nbb('./src/controllers/helpers');
 			const status = err instanceof C.HttpError ? err.status : 500;
 			if (status === 500) {
 				console.error('[duplicate-guard]', err);

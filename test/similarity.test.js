@@ -83,3 +83,17 @@ test('exclude and allow filters are honoured', () => {
 	assert.ok(!idx.search(q, { minScore: 0.2, exclude: new Set(['1']) }).some(r => r.id === '1'));
 	assert.ok(!idx.search(q, { minScore: 0.2, allow: m => m.cid !== 7 }).some(r => r.id === '1'));
 });
+
+test('Hebrew morphological variants of the same phrase are suggested (infinitive vs noun)', () => {
+	const idx = build([
+		{ id: 1, title: 'בנייה מחדש', snippet: '' },
+		{ id: 2, title: 'המלצה על מקרר חדש למטבח קטן', snippet: '' },
+		{ id: 3, title: 'איך מתקינים תוכנה במחשב', snippet: '' },
+		{ id: 4, title: 'ארוחת ערב מחדש', snippet: '' },
+		...Array.from({ length: 30 }, (_, i) => ({ id: 100 + i, title: `נושא כללי ${i} על טיולים בצפון`, snippet: '' })),
+	]);
+	const res = idx.search({ title: 'לבנות מחדש', snippet: '' }, { minScore: 0.28 });
+	assert.strictEqual(res[0].id, '1');
+	assert.notStrictEqual(classify(res[0].score), 'weak');
+	assert.ok(!res.some(r => r.id === '4'), 'sharing only "again" must not match');
+});
