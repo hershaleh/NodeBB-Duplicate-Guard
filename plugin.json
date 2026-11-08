@@ -1,0 +1,28 @@
+{
+  "id": "nodebb-plugin-duplicate-guard",
+  "url": "https://github.com/hershaleh/NodeBB-Duplicate-Guard",
+  "library": "./library.js",
+  "hooks": [
+    { "hook": "static:app.load", "method": "init" },
+    { "hook": "static:api.routes", "method": "addApiRoutes" },
+    { "hook": "filter:admin.header.build", "method": "addAdminMenu" },
+    { "hook": "action:topic.post", "method": "onTopicPost" },
+    { "hook": "action:topic.delete", "method": "onTopicRemoved" },
+    { "hook": "action:topic.purge", "method": "onTopicRemoved" },
+    { "hook": "action:topic.restore", "method": "onTopicRestored" },
+    { "hook": "action:topic.move", "method": "onTopicMoved" },
+    { "hook": "action:topic.edit", "method": "onTopicEdited" }
+  ],
+  "scripts": [
+    "public/js/client.js"
+  ],
+  "less": [
+    "public/css/duplicate-guard.less"
+  ],
+  "modules": {
+    "../admin/plugins/duplicate-guard.js": "public/js/admin.js"
+  },
+  "templates": "templates",
+  "languages": "languages",
+  "defaultLang": "en-GB"
+}
