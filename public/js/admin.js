@@ -108,6 +108,10 @@ define('admin/plugins/duplicate-guard', ['api', 'alerts', 'translator'], functio
 	}
 
 	Admin.init = async function () {
+		// translate the template explicitly so labels never show as raw [[keys]]
+		await new Promise((resolve) => {
+			translator.translate($('#dg-admin').html(), (html) => { $('#dg-admin').html(html); resolve(); });
+		});
 		try {
 			render(await api.get(`${BASE}/config`, {}));
 		} catch (err) {

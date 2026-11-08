@@ -10,7 +10,8 @@ const C = require('./lib/controllers');
 
 const Plugin = {};
 
-const BASE = '/plugins/duplicate-guard';
+// relative to /api/v3/plugins (clients call /plugins/duplicate-guard/...)
+const BASE = '/duplicate-guard';
 
 function wrap(handler) {
 	return async (req, res) => {
@@ -45,21 +46,25 @@ Plugin.init = async ({ router, middleware }) => {
 	});
 };
 
-Plugin.addApiRoutes = async ({ router, middleware, helpers }) => {
+Plugin.addApiRoutes = async ({ router, middleware }) => {
+	// The router is already mounted at /api/v3/plugins, so paths are relative to that.
+	const routeHelpers = nbb('./src/routes/helpers');
 	const auth = [middleware.ensureLoggedIn];
-	router.get(`${BASE}/suggest`, auth, wrap(C.suggest));
-	router.get(`${BASE}/me`, auth, wrap(C.me));
-	router.put(`${BASE}/me/notifications`, auth, wrap(C.setNotifications));
-	router.get(`${BASE}/suspects`, auth, wrap(C.listSuspects));
-	router.post(`${BASE}/suspects/:tid/dismiss`, auth, wrap(C.dismiss));
-	router.post(`${BASE}/suspects/:tid/confirm`, auth, wrap(C.confirm));
+	const route = (verb, path, handler) => routeHelpers.setupApiRoute(router, verb, `${BASE}${path}`, auth, wrap(handler));
 
-	router.get(`${BASE}/admin/config`, auth, wrap(C.getConfig));
-	router.put(`${BASE}/admin/config`, auth, wrap(C.putConfig));
-	router.put(`${BASE}/admin/key/:provider`, auth, wrap(C.putKey));
-	router.delete(`${BASE}/admin/key/:provider`, auth, wrap(C.deleteKey));
-	router.post(`${BASE}/admin/test/:provider`, auth, wrap(C.testProvider));
-	router.get(`${BASE}/admin/models/:provider`, auth, wrap(C.models));
+	route('get', '/suggest', C.suggest);
+	route('get', '/me', C.me);
+	route('put', '/me/notifications', C.setNotifications);
+	route('get', '/suspects', C.listSuspects);
+	route('post', '/suspects/:tid/dismiss', C.dismiss);
+	route('post', '/suspects/:tid/confirm', C.confirm);
+
+	route('get', '/admin/config', C.getConfig);
+	route('put', '/admin/config', C.putConfig);
+	route('put', '/admin/key/:provider', C.putKey);
+	route('delete', '/admin/key/:provider', C.deleteKey);
+	route('post', '/admin/test/:provider', C.testProvider);
+	route('get', '/admin/models/:provider', C.models);
 };
 
 Plugin.addAdminMenu = async (header) => {
