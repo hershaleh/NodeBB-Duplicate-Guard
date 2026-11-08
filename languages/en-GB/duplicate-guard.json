@@ -68,5 +68,6 @@
 	"admin.saved": "Settings saved",
 	"admin.error": "Error",
 	"admin.synonyms": "Custom synonyms",
-	"admin.synonyms.help": "One group per line, words separated by commas. Words in the same group are treated as the same word when comparing topics (built-in groups for common forum words already exist). Single words only. Changing this rebuilds the index."
+	"admin.synonyms.help": "One group per line, words separated by commas. Words in the same group are treated as the same word when comparing topics (built-in groups for common forum words already exist). Single words only. Changing this rebuilds the index.",
+	"admin.supervisors.none": "No additional groups exist yet. Administrators can always supervise."
 }

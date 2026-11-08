@@ -59,7 +59,7 @@
 				<div class="card-header">[[duplicate-guard:admin.supervisors]]</div>
 				<div class="card-body">
 					<p class="text-muted">[[duplicate-guard:admin.supervisors.help]]</p>
-					<select id="dg-groups" class="form-select mb-3" multiple size="6"></select>
+					<div id="dg-groups" class="border rounded p-2 mb-3" style="max-height: 16rem; overflow-y: auto;"></div>
 					<div class="form-check mb-0">
 						<input class="form-check-input" type="checkbox" id="dg-notif-default" data-key="notificationsDefault">
 						<label class="form-check-label" for="dg-notif-default">[[duplicate-guard:admin.notifications-default]]</label>

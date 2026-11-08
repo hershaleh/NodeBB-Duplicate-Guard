@@ -75,7 +75,7 @@
 		const panel = $panel[0];
 		panel.textContent = '';
 		if (!items.length) {
-			$panel.addClass('hidden');
+			$panel.addClass('dg-hidden');
 			return;
 		}
 		const dups = items.filter(i => i.tier === 'duplicate');
@@ -93,7 +93,7 @@
 
 		const toggle = el('button', { type: 'button', class: 'btn btn-link btn-sm dg-toggle', text: t('suggest.collapse') });
 		toggle.addEventListener('click', () => {
-			const hidden = body.classList.toggle('hidden');
+			const hidden = body.classList.toggle('dg-hidden');
 			toggle.textContent = hidden ? t('suggest.expand') : t('suggest.collapse');
 		});
 
@@ -105,56 +105,78 @@
 			toggle,
 		]));
 		panel.appendChild(body);
-		$panel.removeClass('hidden');
+		$panel.removeClass('dg-hidden');
 	}
 
-	function attachToComposer(postUuid) {
-		const $composer = $(`#cmp-uuid-${postUuid}`);
-		const $title = $composer.find('input.title');
-		const $write = $composer.find('textarea.write');
-		const $cid = $composer.find('.category-list');
-		if (!$title.length || !$write.length) {
-			return; // replies and edits have no title field: nothing to suggest
+	/**
+	 * Delegated listeners instead of relying on composer events: whichever way NodeBB opens the composer
+	 * (page, modal, mobile), typing in its title or body field is enough to attach the suggestions panel.
+	 */
+	const COMPOSER = '[component="composer"], .composer';
+	const state = new WeakMap(); // composer element -> { $panel, timer, seq, lastKey }
+
+	function composerState($composer) {
+		const el = $composer[0];
+		if (state.has(el)) {
+			return state.get(el);
 		}
+		const $title = $composer.find('input.title').first();
+		if (!$title.length) {
+			return null; // replies and edits of non-first posts have no title field: nothing to suggest
+		}
+		const $panel = $('<div class="dg-suggest dg-hidden" aria-live="polite"></div>');
+		const $anchor = $composer.find('.title-container').first();
+		if ($anchor.length) {
+			$anchor.after($panel);
+		} else {
+			$title.parent().after($panel);
+		}
+		const st = { $panel, timer: null, seq: 0, lastKey: '' };
+		state.set(el, st);
+		return st;
+	}
 
-		const $panel = $('<div class="dg-suggest hidden" aria-live="polite"></div>');
-		$title.closest('.title-container, .row, div').first().after($panel);
+	function runSuggest($composer, st) {
+		const $title = $composer.find('input.title').first();
+		const $write = $composer.find('textarea.write').first();
+		const title = String($title.val() || '').trim();
+		const content = String($write.val() || '').slice(0, 800);
+		const key = `${title}\u0000${content.slice(0, 400)}`;
+		if (title.length < 4) {
+			st.lastKey = '';
+			st.$panel.addClass('dg-hidden');
+			return;
+		}
+		if (key === st.lastKey) {
+			return;
+		}
+		st.lastKey = key;
+		const mine = ++st.seq;
+		modules.api.get(`${BASE}/suggest`, { title, content, cid: $composer.find('.category-list').val() })
+			.then((res) => {
+				if (mine !== st.seq) {
+					return; // a newer request superseded this one
+				}
+				renderSuggestions(st.$panel, (res && res.items) || []);
+			})
+			.catch((err) => {
+				// suggestions must never get in the way of writing
+				st.$panel.addClass('dg-hidden');
+				if (window.console) { window.console.warn('[duplicate-guard] suggestion request failed', err); }
+			});
+	}
 
-		let timer = null;
-		let seq = 0;
-		let lastKey = '';
-
-		const run = () => {
-			const title = String($title.val() || '').trim();
-			const content = String($write.val() || '').slice(0, 800);
-			const key = `${title}\u0000${content.slice(0, 400)}`;
-			if (title.length < 4) {
-				lastKey = '';
-				$panel.addClass('hidden');
-				return;
-			}
-			if (key === lastKey) {
-				return;
-			}
-			lastKey = key;
-			const mine = ++seq;
-			modules.api.get(`${BASE}/suggest`, { title, content, cid: $cid.val() })
-				.then((res) => {
-					if (mine !== seq) {
-						return; // a newer request superseded this one
-					}
-					renderSuggestions($panel, (res && res.items) || []);
-				})
-				.catch(() => $panel.addClass('hidden')); // suggestions must never get in the way of writing
-		};
-
-		const schedule = () => {
-			clearTimeout(timer);
-			timer = setTimeout(run, DEBOUNCE_MS);
-		};
-		$title.on('input', schedule);
-		$write.on('input', schedule);
-		schedule();
+	function onComposerInput() {
+		const $composer = $(this).closest(COMPOSER);
+		if (!$composer.length) {
+			return;
+		}
+		const st = composerState($composer);
+		if (!st) {
+			return;
+		}
+		clearTimeout(st.timer);
+		st.timer = setTimeout(() => runSuggest($composer, st), DEBOUNCE_MS);
 	}
 
 	/* ======================================================== flags ===== */
@@ -287,11 +309,7 @@
 			modules.api = api;
 			modules.alerts = alerts;
 			loadStrings(translator).then(() => {
-				$(window).on('action:composer.loaded', (ev, data) => {
-					if (data && data.post_uuid) {
-						attachToComposer(data.post_uuid);
-					}
-				});
+				$(document).on('input keyup change', `${COMPOSER.split(', ').map(c => `${c} input.title, ${c} textarea.write`).join(', ')}`, onComposerInput);
 				$(window).on('action:ajaxify.end', renderFlagsPanel);
 				renderFlagsPanel();
 			});

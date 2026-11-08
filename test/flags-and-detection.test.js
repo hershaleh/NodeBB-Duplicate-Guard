@@ -250,3 +250,14 @@ test('suggest endpoint: short titles, disabled setting and rate limit', async ()
 	}
 	assert.ok(limited >= 1);
 });
+
+test('regression: "לבנות מחדש" is suggested for an existing "בנייה מחדש" topic through the suggest endpoint', async () => {
+	const h = helpers.install(world());
+	h.world.topics[300] = { title: 'בנייה מחדש', slug: '300/rebuild', cid: 1, uid: 5, timestamp: NOW - 10, mainPid: 600 };
+	h.world.posts[600] = { content: 'איך בונים מחדש בית ישן' };
+	h.db.zsets.get('topics:tid').set('300', NOW - 10);
+	const res = await C.suggest({ uid: 9, query: { title: 'לבנות מחדש', content: '' } });
+	assert.ok(res.indexed > 0);
+	assert.strictEqual(res.items[0].tid, 300);
+	assert.ok(res.items[0].score >= 36, `score was ${res.items[0].score}`);
+});

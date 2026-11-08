@@ -64,9 +64,17 @@ define('admin/plugins/duplicate-guard', ['api', 'alerts', 'translator'], functio
 		});
 
 		const $g = $('#dg-groups').empty();
-		Array.from(new Set(config.allGroups.concat(s.superviseGroups))).forEach((name) => {
-			$('<option>').val(name).text(name).prop('selected', s.superviseGroups.includes(name)).appendTo($g);
+		const names = Array.from(new Set(config.allGroups.concat(s.superviseGroups)));
+		names.forEach((name, i) => {
+			const id = `dg-group-${i}`;
+			const $row = $('<div class="form-check"></div>');
+			$('<input class="form-check-input" type="checkbox">').attr('id', id).val(name).prop('checked', s.superviseGroups.includes(name)).appendTo($row);
+			$('<label class="form-check-label"></label>').attr('for', id).text(name).appendTo($row);
+			$row.appendTo($g);
 		});
+		if (!names.length) {
+			t('admin.supervisors.none').then(msg => $g.text(msg).addClass('text-muted'));
+		}
 
 		const $p = $('#dg-provider').empty();
 		t('admin.ai.provider.none').then((label) => {
@@ -88,7 +96,7 @@ define('admin/plugins/duplicate-guard', ['api', 'alerts', 'translator'], functio
 			const key = $el.attr('data-key');
 			out[key] = $el.attr('type') === 'checkbox' ? $el.is(':checked') : $el.val();
 		});
-		out.superviseGroups = $('#dg-groups').val() || [];
+		out.superviseGroups = $('#dg-groups input:checked').map(function () { return $(this).val(); }).get();
 		out.aiProvider = $('#dg-provider').val() || 'none';
 		out.aiModel = $('#dg-model').val() || '';
 		out.aiOllamaUrl = $('#dg-ollama-url').val();
