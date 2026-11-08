@@ -167,3 +167,36 @@ test('broader matching does not match nonsense', () => {
 	// short words are never "typo-corrected" into other words
 	assert.deepStrictEqual(idx.search({ title: 'גיטרה צבעים' }, { minScore: 0.36 }), []);
 });
+
+test('regression: "לנסות אמוג\'י" finds "נסיון לאמוג\'י" (noun vs infinitive, geresh)', () => {
+	const idx = build([
+		{ id: 1, title: "נסיון לאמוג'י", snippet: '' },
+		{ id: 2, title: 'ארוחת ערב מחדש', snippet: '' },
+		...Array.from({ length: 30 }, (_, i) => ({ id: 100 + i, title: `נושא כללי ${i} על טיולים בצפון`, snippet: '' })),
+	]);
+	for (const q of ["לנסות אמוג'י", 'לנסות אמוגי', "ניסיון אמוג'י"]) {
+		const res = idx.search({ title: q }, { minScore: 0.36 });
+		assert.strictEqual(res[0] && res[0].id, '1', `"${q}" should find the topic`);
+	}
+	assert.deepStrictEqual(idx.search({ title: 'לנסות מחדש' }, { minScore: 0.36 }).map(r => r.id), [], 'the shared word "מחדש" alone is not a match');
+});
+
+test('typical forum paraphrases are all suggested (at least as related)', () => {
+	const pairs = [
+		['איך מוסיפים אימוג\'י', 'הוספת אמוג\'י לפוסט'],
+		['לא מצליח להתחבר לחשבון', 'בעיה בהתחברות לחשבון'],
+		['מחיקת פוסט', 'איך למחוק פוסט'],
+		['שינוי סיסמה', 'איך משנים סיסמא'],
+		['האתר איטי', 'האתר נטען לאט'],
+		['ליצור קבוצה חדשה', 'יצירת קבוצה'],
+		['העלאת תמונה לפרופיל', 'איך מעלים תמונת פרופיל'],
+		['לנסות אמוג\'י', 'נסיון לאמוג\'י'],
+		['cant login to account', 'login problem with my account'],
+	];
+	const filler = Array.from({ length: 60 }, (_, i) => ({ id: 100 + i, title: `נושא כללי ${i} על טיולים בצפון ומסעדות`, snippet: '' }));
+	for (const [q, t] of pairs) {
+		const idx = build([{ id: 1, title: t, snippet: '' }, ...filler]);
+		const hit = idx.search({ title: q }, { minScore: 0.2 }).find(r => r.id === '1');
+		assert.ok(hit && classify(hit.score) !== 'weak', `"${q}" should find "${t}" (score ${hit && hit.score.toFixed(2)})`);
+	}
+});
