@@ -97,3 +97,73 @@ test('Hebrew morphological variants of the same phrase are suggested (infinitive
 	assert.notStrictEqual(classify(res[0].score), 'weak');
 	assert.ok(!res.some(r => r.id === '4'), 'sharing only "again" must not match');
 });
+
+/* ------------------------------------------------ broader matching */
+
+const { convertLayout, setSynonyms } = require('../lib/similarity');
+
+const wide = [
+	{ id: 1, title: 'איך מתקינים תוכנה במחשב', snippet: '' },
+	{ id: 2, title: 'בעיה בחיבור לאינטרנט בנתב', snippet: '' },
+	{ id: 3, title: 'המלצה על מקרר חדש למטבח קטן', snippet: '' },
+	{ id: 4, title: 'איך מגדירים נתב ביתי לחיבור סיבים', snippet: '' },
+	{ id: 5, title: 'Best way to learn guitar chords quickly', snippet: '' },
+	...Array.from({ length: 30 }, (_, i) => ({ id: 100 + i, title: `נושא כללי ${i} על טיולים בצפון`, snippet: '' })),
+];
+
+test('typos in a long word are corrected', () => {
+	const idx = build(wide);
+	const [top] = idx.search({ title: 'איך מתקינים תוכנא במחשב' }, { minScore: 0.3 });
+	assert.strictEqual(top.id, '1');
+	assert.ok(classify(top.score) !== 'weak');
+});
+
+test('synonyms connect differently worded questions', () => {
+	const idx = build(wide);
+	const [top] = idx.search({ title: 'תקלה ברשת בראוטר' }, { minScore: 0.3 });
+	assert.strictEqual(top.id, '2');
+});
+
+test('plural / possessive forms match', () => {
+	const idx = build(wide);
+	const [top] = idx.search({ title: 'ההמלצות למקררים חדשים למטבחים' }, { minScore: 0.3 });
+	assert.strictEqual(top.id, '3');
+});
+
+test('a topic typed with the wrong keyboard layout is still found (both directions)', () => {
+	const idx = build(wide);
+	const slipped = convertLayout('איך מגדירים נתב ביתי לחיבור סיבים');
+	assert.ok(/^[a-z ,.;]+$/.test(slipped), `got ${slipped}`);
+	assert.strictEqual(idx.search({ title: slipped }, { minScore: 0.3 })[0].id, '4');
+	const he = convertLayout('best way to learn guitar chords');
+	assert.ok(/[א-ת]/.test(he));
+	assert.strictEqual(idx.search({ title: he }, { minScore: 0.3 })[0].id, '5');
+	assert.strictEqual(convertLayout('mixed שפות here'), '');
+});
+
+test('admin-defined synonyms are applied', () => {
+	setSynonyms('מקפיא, מקרר');
+	try {
+		const idx = build(wide);
+		assert.strictEqual(idx.search({ title: 'המלצה על מקפיא חדש למטבח קטן' }, { minScore: 0.3 })[0].id, '3');
+	} finally {
+		setSynonyms('');
+	}
+});
+
+test('broader matching does not match nonsense', () => {
+	const idx = build(wide);
+	const noise = [
+		'בעיה בבישול עוגת שוקולד',         // shares only a synonym-group word with topic 2
+		'תוכנית טלוויזיה חדשה בערב',        // looks a bit like "תוכנה" but is a different word
+		'מחירון ביטוח רכב לשנה הבאה',
+		'how to bake sourdough bread',
+		'נתב',                                // single generic word is allowed but must never reach duplicate level for a different topic
+	];
+	for (const title of noise.slice(0, 4)) {
+		const res = idx.search({ title }, { minScore: 0.36 });
+		assert.deepStrictEqual(res.map(r => r.id), [], `"${title}" should match nothing, got ${JSON.stringify(res.map(r => [r.id, r.score.toFixed(2)]))}`);
+	}
+	// short words are never "typo-corrected" into other words
+	assert.deepStrictEqual(idx.search({ title: 'גיטרה צבעים' }, { minScore: 0.36 }), []);
+});

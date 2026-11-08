@@ -14,17 +14,27 @@ const Plugin = require('../library');
 
 const NOW = Date.now();
 
+// a forum with only a handful of topics has meaningless IDF, so fixtures include unrelated background topics
+const filler = {};
+const fillerPosts = {};
+for (let i = 0; i < 25; i++) {
+	filler[200 + i] = { title: `נושא כללי מספר ${i} על טיולים וקמפינג בצפון`, slug: `${200 + i}/f`, cid: 1, uid: 5, timestamp: NOW - 5000 - i, mainPid: 500 + i };
+	fillerPosts[500 + i] = { content: '' };
+}
+
 function world(extra = {}) {
 	return {
 		admins: [1],
 		groups: { 'forum-mods': [2, 3] },
 		topics: {
+			...filler,
 			10: { title: 'איך מגדירים נתב ביתי לחיבור סיבים', slug: '10/router', cid: 1, uid: 5, timestamp: NOW - 1000, mainPid: 100 },
 			11: { title: 'המלצה על מקרר חדש למטבח קטן', slug: '11/fridge', cid: 1, uid: 5, timestamp: NOW - 900, mainPid: 101 },
 			12: { title: 'How do I reset my router password?', slug: '12/pw', cid: 2, uid: 5, timestamp: NOW - 800, mainPid: 102 },
 			13: { title: 'איך להגדיר נתב ביתי לסיבים', slug: '13/new', cid: 1, uid: 6, timestamp: NOW, mainPid: 103, notYet: true },
 		},
 		posts: {
+			...fillerPosts,
 			100: { content: 'קניתי נתב חדש ואני לא מצליח להגדיר אותו' },
 			101: { content: 'מחפש מקרר חסכוני' },
 			102: { content: 'I forgot the admin password' },

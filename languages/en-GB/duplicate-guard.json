@@ -3,7 +3,6 @@
 	"notify.suspect": "Suspected duplicate topic: %1 (%2% match)",
 	"error.no-secret": "The forum has no secret configured, so API keys cannot be stored securely",
 	"error.empty-key": "The API key cannot be empty",
-
 	"suggest.title": "Similar topics already exist",
 	"suggest.subtitle": "Take a quick look before posting. You can still post your topic.",
 	"suggest.duplicate": "Likely the same question",
@@ -14,7 +13,6 @@
 	"suggest.collapse": "Hide suggestions",
 	"suggest.expand": "Show suggestions",
 	"suggest.open": "Open topic",
-
 	"flags.tab": "Duplicate topics",
 	"flags.empty": "No suspected duplicates are waiting.",
 	"flags.pending": "Pending",
@@ -34,7 +32,6 @@
 	"flags.status.merged": "Merged",
 	"flags.area-disabled": "The duplicate supervision area is turned off by the forum administrator.",
 	"flags.error": "Something went wrong. Please try again.",
-
 	"admin.general": "General",
 	"admin.enabled": "Enable duplicate detection",
 	"admin.suggestions": "Show suggestions while writing a new topic",
@@ -69,5 +66,7 @@
 	"admin.ai.disabled": "AI is turned off",
 	"admin.save": "Save settings",
 	"admin.saved": "Settings saved",
-	"admin.error": "Error"
+	"admin.error": "Error",
+	"admin.synonyms": "Custom synonyms",
+	"admin.synonyms.help": "One group per line, words separated by commas. Words in the same group are treated as the same word when comparing topics (built-in groups for common forum words already exist). Single words only. Changing this rebuilds the index."
 }

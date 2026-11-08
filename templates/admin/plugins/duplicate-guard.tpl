@@ -48,6 +48,14 @@
 			</div>
 
 			<div class="card mb-3">
+				<div class="card-header">[[duplicate-guard:admin.synonyms]]</div>
+				<div class="card-body">
+					<p class="text-muted">[[duplicate-guard:admin.synonyms.help]]</p>
+					<textarea class="form-control" rows="5" id="dg-synonyms" data-key="synonyms" dir="auto" placeholder="מקרר, מקפיא&#10;router, modem"></textarea>
+				</div>
+			</div>
+
+			<div class="card mb-3">
 				<div class="card-header">[[duplicate-guard:admin.supervisors]]</div>
 				<div class="card-body">
 					<p class="text-muted">[[duplicate-guard:admin.supervisors.help]]</p>
